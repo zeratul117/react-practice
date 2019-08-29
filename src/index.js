@@ -3,8 +3,12 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 function Square(props) {
+  const winningBackground = {
+    background: 'blue'
+  }
+
       return (
-        <button className="square" onClick={props.onClick}>
+        <button style={props.index ? winningBackground : null} className="square" onClick={props.onClick}>
             {props.value}
         </button>
       );
@@ -14,30 +18,26 @@ function Square(props) {
     
     renderSquare(i) {
       return (
-        <Square 
+        <Square
+        key={i}
+        index={this.props.winningSquares.includes(i)}
         value={this.props.squares[i]}
         onClick={() => this.props.onClick(i)}/>
       );
     }
-  
+    
     render() {
-      return (
+    const row = 3, col = 3;
+      return ( 
         <div>
-          <div className="board-row">
-            {this.renderSquare(0)}
-            {this.renderSquare(1)}
-            {this.renderSquare(2)}
-          </div>
-          <div className="board-row">
-            {this.renderSquare(3)}
-            {this.renderSquare(4)}
-            {this.renderSquare(5)}
-          </div>
-          <div className="board-row">
-            {this.renderSquare(6)}
-            {this.renderSquare(7)}
-            {this.renderSquare(8)}
-          </div>
+            {[...new Array(row)].map((x, rowIndex) => {
+                return (
+                    <div className="board-row" key={rowIndex}>
+                        {[...new Array(col)].map((y, colIndex) => this.renderSquare(rowIndex*col + colIndex))}
+                    </div>
+                )
+            })}
+          
         </div>
       );
     }
@@ -53,6 +53,7 @@ function Square(props) {
               stepNumber: 0,
               xIsNext: true,
               lastSelected: -1,
+              isButtonPressed: true,
           };
       }
 
@@ -80,6 +81,12 @@ function Square(props) {
             lastSelected: step
         });
     }
+
+    switchMoves() {
+      this.setState({
+        isButtonPressed: !this.state.isButtonPressed
+      })
+    }
   
     render() {
     const history = this.state.history;
@@ -99,28 +106,41 @@ function Square(props) {
         );
     });
 
+    
+    
+
     let status;
     if(winner) {
-        status = `Winner: ${winner}`;
-    } else {
+        status = `Winner: ${winner.player}`;
+    } else if (!current.squares.includes(null)) {
+      status = `IT'S A DRAW!!`
+    }
+    else {
         status = `Next player: ${this.state.xIsNext ? 'X' : 'O'}`;
     }
-      return (
+      return (  
         <div className="game">
           <div className="game-board">
             <Board 
+            winningSquares= {winner ? winner.line : []}
             squares={current.squares}
             onClick={(i) => this.handleClick(i)}
             />
           </div>
           <div className="game-info">
             <div>{status}</div>
-            <ol>{moves}</ol>
+            <ol>{this.state.isButtonPressed ? moves : moves.reverse()}</ol>
           </div>
+            <div className="game-info">
+                <button onClick={() => this.switchMoves()}>Switch</button>
+            </div>
         </div>
       );
+
     }
   }
+
+
   
   // ========================================
   
@@ -143,7 +163,10 @@ function Square(props) {
     for (let i = 0; i < lines.length; i++) {
       const [a, b, c] = lines[i];
       if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-        return squares[a];
+        return {
+          player: squares[a],
+          line: [a, b, c]
+        }
       }
     }
     return null;
